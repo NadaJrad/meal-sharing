@@ -21,26 +21,68 @@ app.use(cors());
 
 router.use("/meals", mealsRouter);
 
-//--------- homework ---------------
-
-app.get("/future-meals", (req, res) => {
-  res.send("Hi friend");
-});
- 
-app.get("/past-meals", (req, res) => {
-  res.send("Hi friend");
-});
-
-app.get("/all-meals", (req, res) => {
-  res.send("Hi friend");
-});
- 
-app.get("/first-meal", (req, res) => {
-  res.send("Hi friend");
+//--------- homework 
+// Future Meals
+app.get("/future-meals", async (req, res) => {
+  try {
+    const futureMeals = await knex.raw("SELECT * FROM meals WHERE when > NOW()"); //const futureMeals = await knex("meals").where("when", ">", knex.raw("NOW()"));
+    res.json(futureMeals || []);
+  } catch (error) {
+    console.error('Error retrieving future meals:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
-app.get("/last-meal", (req, res) => {
-  res.send("Hi friend");
+// Past Meals
+app.get("/past-meals", async (req, res) => {
+  try {
+    const pastMeals = await knex.raw("SELECT * FROM meals WHERE when < NOW()"); //const pastMeals = await knex("meals").where("when", "<", knex.raw("NOW()"));
+    res.json(pastMeals || []);
+  } catch (error) {
+    console.error('Error retrieving past meals:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// All Meals
+app.get("/all-meals", async (req, res) => {
+  try {
+    const allMeals = await knex("meals").orderBy("id");
+    res.json(allMeals || []);
+  } catch (error) {
+    console.error('Error retrieving all meals:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// First Meal
+app.get("/first-meal", async (req, res) => {
+  try {
+    const firstMeal = await knex("meals").orderBy("id").first();
+    if (firstMeal) {
+      res.json(firstMeal);
+    } else {
+      res.status(404).json({ error: 'No meals found' });
+    }
+  } catch (error) {
+    console.error('Error retrieving first meal:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Last Meal
+app.get("/last-meal", async (req, res) => {
+  try {
+    const lastMeal = await knex("meals").orderBy("id", "desc").first();
+    if (lastMeal) {
+      res.json(lastMeal);
+    } else {
+      res.status(404).json({ error: 'No meals found' });
+    }
+  } catch (error) {
+    console.error('Error retrieving last meal:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 if (process.env.API_PATH) {
