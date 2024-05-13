@@ -13,16 +13,52 @@ router.get("/", async (request, response) => {
 });
 
 
-// GET all meals
+// GET all meals with query parameters support
 router.get("/", async (req, res) => {
   try {
-    const meals = await knex("meals");
+    let query = knex("meals");
+
+    if (req.query.maxPrice) {
+      query = query.where("price", "<=", req.query.maxPrice);
+    }
+
+    if (req.query.availableReservations) {
+      if (req.query.availableReservations === "true") {
+        query = query.whereRaw("max_reservations > reservations");
+      } else {
+        query = query.whereRaw("max_reservations <= reservations");
+      }
+    }
+
+    if (req.query.title) {
+      query = query.where("title", "like", `%${req.query.title}%`);
+    }
+
+    if (req.query.dateAfter) {
+      query = query.where("when", ">", req.query.dateAfter);
+    }
+
+    if (req.query.dateBefore) {
+      query = query.where("when", "<", req.query.dateBefore);
+    }
+
+    if (req.query.limit) {
+      query = query.limit(req.query.limit);
+    }
+
+    if (req.query.sortKey) {
+      let direction = req.query.sortDir || "asc";
+      query = query.orderBy(req.query.sortKey, direction);
+    }
+
+    const meals = await query;
     res.json(meals);
   } catch (error) {
     console.error("Error fetching meals:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 
 // GET a meal by ID
 router.get("/:id", async (req, res) => {
@@ -80,6 +116,17 @@ router.delete("/:id", async (req, res) => {
     }
   } catch (error) {
     console.error("Error deleting meal:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// GET reviews for a specific meal
+router.get("/:meal_id/reviews", async (req, res) => {
+  try {
+    const reviews = await knex("reviews").where({ meal_id: req.params.meal_id });
+    res.json(reviews);
+  } catch (error) {
+    console.error("Error fetching reviews:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
